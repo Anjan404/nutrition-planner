@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { User, Heart, Target, Scale, Ruler, Calendar, AlertCircle, Activity, Flame, Clock, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { mockNutritionAI } from '../lib/deepseek';
 
 export const ProfileSetupPage: React.FC = () => {
   const { user } = useAuth();
@@ -97,25 +97,7 @@ export const ProfileSetupPage: React.FC = () => {
     setLoading(true);
     
     try {
-      // First, update the profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          age: parseInt(formData.age),
-          height: parseFloat(formData.height),
-          weight: parseFloat(formData.weight),
-          activity_level: formData.activityLevel,
-          fitness_goals: formData.fitnessGoals,
-          dietary_restrictions: formData.dietaryRestrictions,
-          medical_conditions: formData.medicalConditions,
-          cultural_preferences: formData.culturalPreferences,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      // After profile is saved, generate AI diet plan
+      // Generate AI diet plan with mock data
       await generateInitialDietPlan();
       
       // Show the generated plan on screen
@@ -128,9 +110,8 @@ export const ProfileSetupPage: React.FC = () => {
   };
 
   const generateInitialDietPlan = async () => {
-    console.log('Starting AI diet plan generation...');
     try {
-      // Get the updated profile data
+      // Create profile object
       const profile = {
         age: parseInt(formData.age),
         height: parseFloat(formData.height),
@@ -142,45 +123,31 @@ export const ProfileSetupPage: React.FC = () => {
         cultural_preferences: formData.culturalPreferences
       };
 
-      console.log('User profile for AI:', profile);
-
-      // Import deepseekAI dynamically to avoid circular imports
-      const { deepseekAI } = await import('../lib/deepseek');
-      
-      // Generate meal plan using Deepseek AI
-      console.log('Calling Deepseek AI...');
-      const aiMealPlan = await deepseekAI.generateMealPlan(profile);
-      console.log('AI meal plan generated:', aiMealPlan);
+      // Generate meal plan using mock AI
+      const aiMealPlan = await mockNutritionAI.generateMealPlan(profile);
       
       // Calculate total daily calories from the first day
       const firstDay = Object.values(aiMealPlan)[0];
       const dailyCalories = Object.values(firstDay).reduce((total: number, meal: any) => total + meal.calories, 0);
 
-      // Save the generated meal plan to database
+      // Create mock plan data
       const newPlan = {
-        user_id: user.id,
+        id: Math.random().toString(36).substr(2, 9),
         plan_name: 'Welcome Plan - AI Generated',
         calories_target: dailyCalories,
-        meals: aiMealPlan
+        meals: aiMealPlan,
+        created_at: new Date().toISOString()
       };
-
-      const { data, error } = await supabase
-        .from('meal_plans')
-        .insert([newPlan])
-        .select()
-        .single();
-
-      if (error) throw error;
       
       // Store the generated plan to display
-      console.log('Diet plan saved to database:', data);
-      setGeneratedPlan(data);
+      setGeneratedPlan(newPlan);
 
     } catch (error) {
       console.error('Error generating initial diet plan:', error);
       // Don't throw error here - profile setup should still complete
     }
   };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -618,10 +585,10 @@ export const ProfileSetupPage: React.FC = () => {
             className="bg-gradient-to-r from-vital-mint/10 to-citrus-glow/10 rounded-2xl p-8 text-center"
           >
             <h3 className="text-2xl font-bold text-graphite-ink mb-4">
-              🤖 Powered by Advanced AI
+              🤖 Powered by Mock AI
             </h3>
             <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-              Your personalized meal plan was created using Deepseek AI, analyzing your age ({formData.age}), 
+              Your personalized meal plan was created using our mock AI system, analyzing your age ({formData.age}), 
               activity level ({formData.activityLevel}), fitness goals, cultural preferences, 
               and dietary restrictions to deliver optimal nutrition tailored just for you.
             </p>

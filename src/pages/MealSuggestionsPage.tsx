@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, Clock, Flame, Users, Star, Heart, ChefHat, Loader2, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { deepseekAI, type Meal } from '../lib/deepseek';
-import { supabase } from '../lib/supabase';
+import { mockNutritionAI, type Meal } from '../lib/deepseek';
 
 export const MealSuggestionsPage: React.FC = () => {
   const { user } = useAuth();
@@ -146,26 +145,27 @@ export const MealSuggestionsPage: React.FC = () => {
     setError(null);
     
     try {
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        throw new Error('Please complete your profile setup first');
-      }
+      // Mock profile data
+      const profile = {
+        age: 30,
+        height: 170,
+        weight: 70,
+        activity_level: 'moderate',
+        fitness_goals: ['General Health'],
+        dietary_restrictions: [],
+        medical_conditions: [],
+        cultural_preferences: selectedCategory !== 'all' ? [selectedCategory] : []
+      };
 
       // Generate AI meal suggestions
       const mealType = selectedMealType === 'all' ? 'lunch' : selectedMealType;
       const preferences = selectedCategory !== 'all' ? [selectedCategory] : [];
       
-      const suggestions = await deepseekAI.generateMealSuggestions(profile, mealType, preferences);
+      const suggestions = await mockNutritionAI.generateMealSuggestions(profile, mealType, preferences);
       setAiSuggestions(suggestions);
     } catch (error) {
       console.error('Error generating AI suggestions:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate AI suggestions');
+      setError('Failed to generate AI suggestions. Please try again.');
     } finally {
       setLoadingAI(false);
     }

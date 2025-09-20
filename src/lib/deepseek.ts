@@ -1,3 +1,6 @@
+// Deepseek AI integration removed
+// Using mock data for meal planning
+
 interface UserProfile {
   age?: number;
   height?: number;
@@ -30,15 +33,7 @@ interface WeeklyMealPlan {
   [key: string]: MealPlan;
 }
 
-class DeepseekAI {
-  private apiKey: string;
-  private apiUrl: string;
-
-  constructor() {
-    this.apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
-    this.apiUrl = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions';
-  }
-
+class MockNutritionAI {
   private calculateBMR(profile: UserProfile): number {
     if (!profile.age || !profile.height || !profile.weight) return 2000;
     
@@ -58,139 +53,15 @@ class DeepseekAI {
     return Math.round(bmr * multiplier);
   }
 
-  private createPrompt(profile: UserProfile, targetCalories: number): string {
-    const culturalPrefs = profile.cultural_preferences?.length 
-      ? `Cultural preferences: ${profile.cultural_preferences.join(', ')}`
-      : '';
-    
-    const dietaryRestrictions = profile.dietary_restrictions?.length
-      ? `Dietary restrictions: ${profile.dietary_restrictions.join(', ')}`
-      : '';
-    
-    const medicalConditions = profile.medical_conditions?.length
-      ? `Medical considerations: ${profile.medical_conditions.join(', ')}`
-      : '';
-    
-    const fitnessGoals = profile.fitness_goals?.length
-      ? `Fitness goals: ${profile.fitness_goals.join(', ')}`
-      : '';
-
-    return `Create a personalized 7-day meal plan for a person with the following profile:
-
-Age: ${profile.age} years
-Height: ${profile.height} cm
-Weight: ${profile.weight} kg
-Activity Level: ${profile.activity_level}
-Daily Calorie Target: ${targetCalories} calories
-
-${fitnessGoals}
-${culturalPrefs}
-${dietaryRestrictions}
-${medicalConditions}
-
-Please provide a detailed weekly meal plan in JSON format with the following structure:
-{
-  "monday": {
-    "breakfast": {
-      "name": "Meal name",
-      "calories": 350,
-      "protein": 20,
-      "carbs": 45,
-      "fats": 12,
-      "ingredients": ["ingredient1", "ingredient2"],
-      "instructions": ["step1", "step2"]
-    },
-    "lunch": { ... },
-    "dinner": { ... },
-    "snacks": { ... }
-  },
-  "tuesday": { ... },
-  ... for all 7 days
-}
-
-Requirements:
-1. Each day should total approximately ${targetCalories} calories
-2. Include balanced macronutrients (protein: 20-30%, carbs: 45-65%, fats: 20-35%)
-3. Respect all dietary restrictions and cultural preferences
-4. Consider medical conditions for safe recommendations
-5. Align with fitness goals (weight loss, muscle gain, etc.)
-6. Include variety across the week
-7. Provide realistic, achievable meals
-8. Include cooking instructions for each meal
-
-Return ONLY the JSON object, no additional text.`;
-  }
-
   async generateMealPlan(profile: UserProfile): Promise<WeeklyMealPlan> {
-    if (!this.apiKey) {
-      console.error('Deepseek API key not configured');
-      return this.generateFallbackMealPlan(2000);
-    }
-
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     const targetCalories = this.calculateBMR(profile);
-    const prompt = this.createPrompt(profile, targetCalories);
-
-    try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional nutritionist and dietitian with expertise in creating personalized meal plans. Always respond with valid JSON format only.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Deepseek API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (!content) {
-        console.error('No content received from Deepseek API');
-        return this.generateFallbackMealPlan(targetCalories);
-      }
-
-      // Parse the JSON response
-      try {
-        const mealPlan = JSON.parse(content);
-        return mealPlan;
-      } catch (parseError) {
-        console.error('Failed to parse Deepseek response:', content);
-        return this.generateFallbackMealPlan(targetCalories);
-      }
-
-    } catch (error) {
-      console.error('Deepseek API Error:', error);
-      
-      // Fallback to mock data if API fails
-      return this.generateFallbackMealPlan(targetCalories);
-    }
-  }
-
-  private generateFallbackMealPlan(targetCalories: number): WeeklyMealPlan {
-    // Fallback meal plan if API fails
-    const dailyCalories = Math.round(targetCalories);
-    const breakfastCals = Math.round(dailyCalories * 0.25);
-    const lunchCals = Math.round(dailyCalories * 0.35);
-    const dinnerCals = Math.round(dailyCalories * 0.30);
-    const snackCals = Math.round(dailyCalories * 0.10);
+    const breakfastCals = Math.round(targetCalories * 0.25);
+    const lunchCals = Math.round(targetCalories * 0.35);
+    const dinnerCals = Math.round(targetCalories * 0.30);
+    const snackCals = Math.round(targetCalories * 0.10);
 
     return {
       monday: {
@@ -231,7 +102,6 @@ Return ONLY the JSON object, no additional text.`;
           instructions: ['Mix yogurt with honey', 'Top with nuts']
         }
       },
-      // Add similar structure for other days...
       tuesday: {
         breakfast: {
           name: 'Avocado Toast with Eggs',
@@ -269,16 +139,204 @@ Return ONLY the JSON object, no additional text.`;
           ingredients: ['Apple', 'Almond butter'],
           instructions: ['Slice apple', 'Serve with almond butter']
         }
+      },
+      wednesday: {
+        breakfast: {
+          name: 'Smoothie Bowl',
+          calories: breakfastCals,
+          protein: Math.round(breakfastCals * 0.18 / 4),
+          carbs: Math.round(breakfastCals * 0.62 / 4),
+          fats: Math.round(breakfastCals * 0.20 / 9),
+          ingredients: ['Banana', 'Berries', 'Protein powder', 'Granola'],
+          instructions: ['Blend fruits with protein powder', 'Pour into bowl', 'Top with granola']
+        },
+        lunch: {
+          name: 'Mediterranean Bowl',
+          calories: lunchCals,
+          protein: Math.round(lunchCals * 0.22 / 4),
+          carbs: Math.round(lunchCals * 0.48 / 4),
+          fats: Math.round(lunchCals * 0.30 / 9),
+          ingredients: ['Chickpeas', 'Cucumber', 'Feta cheese', 'Olive oil'],
+          instructions: ['Combine chickpeas and vegetables', 'Add feta', 'Drizzle with olive oil']
+        },
+        dinner: {
+          name: 'Baked Cod with Sweet Potato',
+          calories: dinnerCals,
+          protein: Math.round(dinnerCals * 0.28 / 4),
+          carbs: Math.round(dinnerCals * 0.42 / 4),
+          fats: Math.round(dinnerCals * 0.30 / 9),
+          ingredients: ['Cod fillet', 'Sweet potato', 'Green beans', 'Herbs'],
+          instructions: ['Bake cod with herbs', 'Roast sweet potato', 'Steam green beans']
+        },
+        snacks: {
+          name: 'Trail Mix',
+          calories: snackCals,
+          protein: Math.round(snackCals * 0.16 / 4),
+          carbs: Math.round(snackCals * 0.44 / 4),
+          fats: Math.round(snackCals * 0.40 / 9),
+          ingredients: ['Mixed nuts', 'Dried fruits', 'Dark chocolate chips'],
+          instructions: ['Mix all ingredients', 'Store in container']
+        }
+      },
+      thursday: {
+        breakfast: {
+          name: 'Protein Pancakes',
+          calories: breakfastCals,
+          protein: Math.round(breakfastCals * 0.25 / 4),
+          carbs: Math.round(breakfastCals * 0.55 / 4),
+          fats: Math.round(breakfastCals * 0.20 / 9),
+          ingredients: ['Protein powder', 'Banana', 'Eggs', 'Berries'],
+          instructions: ['Mix protein powder with eggs and banana', 'Cook like pancakes', 'Top with berries']
+        },
+        lunch: {
+          name: 'Asian Lettuce Wraps',
+          calories: lunchCals,
+          protein: Math.round(lunchCals * 0.28 / 4),
+          carbs: Math.round(lunchCals * 0.32 / 4),
+          fats: Math.round(lunchCals * 0.40 / 9),
+          ingredients: ['Ground turkey', 'Lettuce cups', 'Water chestnuts', 'Sesame oil'],
+          instructions: ['Cook turkey with seasonings', 'Add water chestnuts', 'Serve in lettuce cups']
+        },
+        dinner: {
+          name: 'Vegetarian Chili',
+          calories: dinnerCals,
+          protein: Math.round(dinnerCals * 0.20 / 4),
+          carbs: Math.round(dinnerCals * 0.55 / 4),
+          fats: Math.round(dinnerCals * 0.25 / 9),
+          ingredients: ['Black beans', 'Kidney beans', 'Tomatoes', 'Bell peppers'],
+          instructions: ['Sauté vegetables', 'Add beans and tomatoes', 'Simmer until thick']
+        },
+        snacks: {
+          name: 'Cottage Cheese with Fruit',
+          calories: snackCals,
+          protein: Math.round(snackCals * 0.35 / 4),
+          carbs: Math.round(snackCals * 0.45 / 4),
+          fats: Math.round(snackCals * 0.20 / 9),
+          ingredients: ['Cottage cheese', 'Pineapple', 'Cinnamon'],
+          instructions: ['Mix cottage cheese with fruit', 'Sprinkle with cinnamon']
+        }
+      },
+      friday: {
+        breakfast: {
+          name: 'Chia Pudding',
+          calories: breakfastCals,
+          protein: Math.round(breakfastCals * 0.16 / 4),
+          carbs: Math.round(breakfastCals * 0.44 / 4),
+          fats: Math.round(breakfastCals * 0.40 / 9),
+          ingredients: ['Chia seeds', 'Almond milk', 'Vanilla', 'Fresh berries'],
+          instructions: ['Mix chia seeds with almond milk', 'Let sit overnight', 'Top with berries']
+        },
+        lunch: {
+          name: 'Tuna Salad Sandwich',
+          calories: lunchCals,
+          protein: Math.round(lunchCals * 0.32 / 4),
+          carbs: Math.round(lunchCals * 0.38 / 4),
+          fats: Math.round(lunchCals * 0.30 / 9),
+          ingredients: ['Tuna', 'Whole grain bread', 'Avocado', 'Spinach'],
+          instructions: ['Mix tuna with avocado', 'Add spinach to bread', 'Assemble sandwich']
+        },
+        dinner: {
+          name: 'Chicken Curry with Rice',
+          calories: dinnerCals,
+          protein: Math.round(dinnerCals * 0.26 / 4),
+          carbs: Math.round(dinnerCals * 0.44 / 4),
+          fats: Math.round(dinnerCals * 0.30 / 9),
+          ingredients: ['Chicken breast', 'Coconut milk', 'Curry spices', 'Brown rice'],
+          instructions: ['Cook chicken with curry spices', 'Add coconut milk', 'Serve over rice']
+        },
+        snacks: {
+          name: 'Hummus with Vegetables',
+          calories: snackCals,
+          protein: Math.round(snackCals * 0.18 / 4),
+          carbs: Math.round(snackCals * 0.52 / 4),
+          fats: Math.round(snackCals * 0.30 / 9),
+          ingredients: ['Hummus', 'Carrots', 'Celery', 'Bell peppers'],
+          instructions: ['Cut vegetables into sticks', 'Serve with hummus']
+        }
+      },
+      saturday: {
+        breakfast: {
+          name: 'Weekend Breakfast Bowl',
+          calories: breakfastCals,
+          protein: Math.round(breakfastCals * 0.22 / 4),
+          carbs: Math.round(breakfastCals * 0.48 / 4),
+          fats: Math.round(breakfastCals * 0.30 / 9),
+          ingredients: ['Quinoa', 'Scrambled eggs', 'Avocado', 'Salsa'],
+          instructions: ['Cook quinoa', 'Scramble eggs', 'Top with avocado and salsa']
+        },
+        lunch: {
+          name: 'Grilled Vegetable Wrap',
+          calories: lunchCals,
+          protein: Math.round(lunchCals * 0.18 / 4),
+          carbs: Math.round(lunchCals * 0.52 / 4),
+          fats: Math.round(lunchCals * 0.30 / 9),
+          ingredients: ['Zucchini', 'Bell peppers', 'Whole wheat tortilla', 'Goat cheese'],
+          instructions: ['Grill vegetables', 'Spread goat cheese on tortilla', 'Roll with vegetables']
+        },
+        dinner: {
+          name: 'Pork Tenderloin with Roasted Vegetables',
+          calories: dinnerCals,
+          protein: Math.round(dinnerCals * 0.30 / 4),
+          carbs: Math.round(dinnerCals * 0.35 / 4),
+          fats: Math.round(dinnerCals * 0.35 / 9),
+          ingredients: ['Pork tenderloin', 'Brussels sprouts', 'Carrots', 'Olive oil'],
+          instructions: ['Season and roast pork', 'Roast vegetables with olive oil', 'Serve together']
+        },
+        snacks: {
+          name: 'Energy Balls',
+          calories: snackCals,
+          protein: Math.round(snackCals * 0.14 / 4),
+          carbs: Math.round(snackCals * 0.46 / 4),
+          fats: Math.round(snackCals * 0.40 / 9),
+          ingredients: ['Dates', 'Almonds', 'Coconut', 'Cocoa powder'],
+          instructions: ['Blend dates and almonds', 'Form into balls', 'Roll in coconut']
+        }
+      },
+      sunday: {
+        breakfast: {
+          name: 'Sunday Brunch Plate',
+          calories: breakfastCals,
+          protein: Math.round(breakfastCals * 0.24 / 4),
+          carbs: Math.round(breakfastCals * 0.46 / 4),
+          fats: Math.round(breakfastCals * 0.30 / 9),
+          ingredients: ['Smoked salmon', 'Whole grain bagel', 'Cream cheese', 'Capers'],
+          instructions: ['Toast bagel', 'Spread cream cheese', 'Top with salmon and capers']
+        },
+        lunch: {
+          name: 'Buddha Bowl',
+          calories: lunchCals,
+          protein: Math.round(lunchCals * 0.20 / 4),
+          carbs: Math.round(lunchCals * 0.50 / 4),
+          fats: Math.round(lunchCals * 0.30 / 9),
+          ingredients: ['Quinoa', 'Roasted chickpeas', 'Kale', 'Tahini dressing'],
+          instructions: ['Cook quinoa', 'Roast chickpeas', 'Massage kale', 'Combine with dressing']
+        },
+        dinner: {
+          name: 'Sunday Roast Chicken',
+          calories: dinnerCals,
+          protein: Math.round(dinnerCals * 0.32 / 4),
+          carbs: Math.round(dinnerCals * 0.38 / 4),
+          fats: Math.round(dinnerCals * 0.30 / 9),
+          ingredients: ['Whole chicken', 'Potatoes', 'Green beans', 'Herbs'],
+          instructions: ['Roast chicken with herbs', 'Roast potatoes', 'Steam green beans']
+        },
+        snacks: {
+          name: 'Dark Chocolate and Nuts',
+          calories: snackCals,
+          protein: Math.round(snackCals * 0.12 / 4),
+          carbs: Math.round(snackCals * 0.38 / 4),
+          fats: Math.round(snackCals * 0.50 / 9),
+          ingredients: ['Dark chocolate', 'Mixed nuts'],
+          instructions: ['Break chocolate into pieces', 'Serve with nuts']
+        }
       }
     };
   }
 
   async generateMealSuggestions(profile: UserProfile, mealType: string, preferences?: string[]): Promise<Meal[]> {
-    if (!this.apiKey) {
-      console.error('Deepseek API key not configured');
-      return this.generateFallbackSuggestions(400);
-    }
-
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     const targetCalories = this.calculateBMR(profile);
     const mealCalories = {
       breakfast: Math.round(targetCalories * 0.25),
@@ -289,79 +347,40 @@ Return ONLY the JSON object, no additional text.`;
 
     const calories = mealCalories[mealType as keyof typeof mealCalories] || 400;
 
-    const prompt = `Generate 5 different ${mealType} meal suggestions for a person with:
-- Target calories per ${mealType}: ${calories}
-- Cultural preferences: ${profile.cultural_preferences?.join(', ') || 'None'}
-- Dietary restrictions: ${profile.dietary_restrictions?.join(', ') || 'None'}
-- Additional preferences: ${preferences?.join(', ') || 'None'}
-
-Return as JSON array with this structure:
-[
-  {
-    "name": "Meal name",
-    "calories": ${calories},
-    "protein": 20,
-    "carbs": 45,
-    "fats": 12,
-    "ingredients": ["ingredient1", "ingredient2"],
-    "instructions": ["step1", "step2"]
-  }
-]
-
-Return ONLY the JSON array, no additional text.`;
-
-    try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional nutritionist. Always respond with valid JSON format only.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.8,
-          max_tokens: 2000,
-        }),
-      });
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-
-      if (content) {
-        return JSON.parse(content);
-      }
-    } catch (error) {
-      console.error('Error generating meal suggestions:', error);
-    }
-
-    // Fallback suggestions
-    return this.generateFallbackSuggestions(calories);
-  }
-
-  private generateFallbackSuggestions(calories: number): Meal[] {
-    return [
+    // Mock suggestions based on meal type
+    const suggestions: Meal[] = [
       {
-        name: `Healthy ${mealType}`,
+        name: `Healthy ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Option 1`,
         calories,
         protein: Math.round(calories * 0.20 / 4),
         carbs: Math.round(calories * 0.50 / 4),
         fats: Math.round(calories * 0.30 / 9),
-        ingredients: ['Fresh ingredients', 'Balanced nutrition'],
-        instructions: ['Prepare with care', 'Enjoy mindfully']
+        ingredients: ['Fresh ingredients', 'Balanced nutrition', 'Quality proteins'],
+        instructions: ['Prepare with care', 'Cook thoroughly', 'Enjoy mindfully']
+      },
+      {
+        name: `Nutritious ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Option 2`,
+        calories: calories + 50,
+        protein: Math.round((calories + 50) * 0.25 / 4),
+        carbs: Math.round((calories + 50) * 0.45 / 4),
+        fats: Math.round((calories + 50) * 0.30 / 9),
+        ingredients: ['Organic produce', 'Lean proteins', 'Healthy fats'],
+        instructions: ['Season well', 'Cook to perfection', 'Serve fresh']
+      },
+      {
+        name: `Balanced ${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Option 3`,
+        calories: calories - 30,
+        protein: Math.round((calories - 30) * 0.18 / 4),
+        carbs: Math.round((calories - 30) * 0.52 / 4),
+        fats: Math.round((calories - 30) * 0.30 / 9),
+        ingredients: ['Whole grains', 'Fresh vegetables', 'Natural flavors'],
+        instructions: ['Combine ingredients', 'Mix well', 'Serve immediately']
       }
     ];
+
+    return suggestions;
   }
 }
 
-export const deepseekAI = new DeepseekAI();
+export const mockNutritionAI = new MockNutritionAI();
 export type { UserProfile, MealPlan, WeeklyMealPlan, Meal };
