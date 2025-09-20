@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, Heart, Target, Scale, Ruler, Calendar, AlertCircle, Activity, Clock, Users, Flame } from 'lucide-react';
+import { User, Heart, Target, Scale, Ruler, Calendar, AlertCircle, Activity, Flame, Clock, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -458,6 +458,190 @@ export const ProfileSetupPage: React.FC = () => {
         return false;
     }
   };
+
+  // If showing generated plan, render the plan display
+  if (showPlan && generatedPlan) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-soft-cloud to-white pt-20 font-poppins">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Success Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <div className="bg-gradient-primary p-4 rounded-full w-fit mx-auto mb-6">
+              <Target className="h-12 w-12 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-graphite-ink mb-4">
+              🎉 Your AI Diet Plan is Ready!
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Based on your profile, we've created a personalized 7-day meal plan using advanced AI
+            </p>
+          </motion.div>
+
+          {/* Plan Overview */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-xl p-8 mb-8"
+          >
+            <h2 className="text-2xl font-bold text-graphite-ink mb-6">{generatedPlan.plan_name}</h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+              <div className="text-center">
+                <div className="bg-gradient-primary p-3 rounded-xl w-fit mx-auto mb-2">
+                  <Flame className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-2xl font-bold text-graphite-ink">{generatedPlan.calories_target}</div>
+                <div className="text-sm text-gray-600">Daily Calories</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="bg-gradient-secondary p-3 rounded-xl w-fit mx-auto mb-2">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-2xl font-bold text-graphite-ink">7</div>
+                <div className="text-sm text-gray-600">Days Planned</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="bg-citrus-glow p-3 rounded-xl w-fit mx-auto mb-2">
+                  <Clock className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-2xl font-bold text-graphite-ink">4</div>
+                <div className="text-sm text-gray-600">Meals/Day</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="bg-leaf-green p-3 rounded-xl w-fit mx-auto mb-2">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-2xl font-bold text-graphite-ink">AI</div>
+                <div className="text-sm text-gray-600">Generated</div>
+              </div>
+            </div>
+
+            {/* Sample Days Preview */}
+            <div className="grid lg:grid-cols-2 gap-6 mb-8">
+              {Object.entries(generatedPlan.meals).slice(0, 2).map(([day, meals]: [string, any]) => (
+                <motion.div
+                  key={day}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-soft-cloud rounded-xl p-6"
+                >
+                  <h3 className="text-xl font-bold text-graphite-ink mb-4 capitalize flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-vital-mint" />
+                    {day}
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {Object.entries(meals).map(([mealType, meal]: [string, any]) => (
+                      <div
+                        key={mealType}
+                        className="bg-white rounded-lg p-4 border border-gray-100"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-semibold text-graphite-ink capitalize">{mealType}</h4>
+                            <p className="text-gray-600 text-sm">{meal.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-vital-mint">{meal.calories}</div>
+                            <div className="text-xs text-gray-500">calories</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-3 text-xs">
+                          <span className="bg-coral-energy/10 text-coral-energy px-2 py-1 rounded">
+                            P: {meal.protein}g
+                          </span>
+                          <span className="bg-citrus-glow/10 text-yellow-700 px-2 py-1 rounded">
+                            C: {meal.carbs}g
+                          </span>
+                          <span className="bg-vital-mint/10 text-vital-mint px-2 py-1 rounded">
+                            F: {meal.fats}g
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Daily Total:</span>
+                      <span className="text-lg font-bold text-graphite-ink">
+                        {Object.values(meals).reduce((total: number, meal: any) => total + meal.calories, 0)} cal
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/diet-plan')}
+                className="bg-gradient-primary text-white px-8 py-4 rounded-lg font-bold text-lg hover:shadow-lg transition-all duration-200"
+              >
+                View Full 7-Day Plan
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/meal-suggestions')}
+                className="bg-white border-2 border-vital-mint text-vital-mint px-6 py-4 rounded-lg font-semibold hover:bg-vital-mint hover:text-white transition-all duration-200"
+              >
+                Explore More Meals
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* AI Generation Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-r from-vital-mint/10 to-citrus-glow/10 rounded-2xl p-8 text-center"
+          >
+            <h3 className="text-2xl font-bold text-graphite-ink mb-4">
+              🤖 Powered by Advanced AI
+            </h3>
+            <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+              Your meal plan was created using Deepseek AI, considering your age ({formData.age}), 
+              activity level ({formData.activityLevel}), fitness goals, cultural preferences, 
+              and dietary restrictions for optimal nutrition.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {formData.fitnessGoals.map((goal) => (
+                <span
+                  key={goal}
+                  className="bg-vital-mint/20 text-vital-mint px-3 py-1 rounded-full text-sm font-medium"
+                >
+                  {goal}
+                </span>
+              ))}
+              {formData.culturalPreferences.map((pref) => (
+                <span
+                  key={pref}
+                  className="bg-coral-energy/20 text-coral-energy px-3 py-1 rounded-full text-sm font-medium"
+                >
+                  {pref} Cuisine
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-soft-cloud to-white pt-20 font-poppins">
