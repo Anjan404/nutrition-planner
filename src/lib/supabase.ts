@@ -1,39 +1,78 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://dsnwecaungoitviiagoa.supabase.co';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Check if we have valid credentials
-if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
-  console.warn('⚠️ Supabase anonymous key not configured properly');
-  console.warn('Please update VITE_SUPABASE_ANON_KEY in your .env file');
-  console.warn('You can find this key in your Supabase Dashboard → Settings → API');
+const hasValidCredentials = supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseUrl !== 'your_supabase_url_here' && 
+  supabaseAnonKey !== 'your_supabase_anon_key_here' &&
+  supabaseUrl.startsWith('https://') &&
+  supabaseAnonKey.length > 50;
+
+if (!hasValidCredentials) {
+  console.warn('⚠️ Supabase credentials not properly configured');
+  console.warn('URL:', supabaseUrl || 'missing');
+  console.warn('Key:', supabaseAnonKey ? 'present but invalid' : 'missing');
+  console.warn('Please update your .env file with valid Supabase credentials');
 }
 
-// Create client with error handling
-export let supabase;
-try {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-  console.log('✅ Supabase client initialized');
-} catch (error) {
-  console.error('❌ Failed to initialize Supabase client:', error);
-  // Create a mock client that won't crash the app
-  supabase = {
-    auth: {
-      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-      signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-      signOut: () => Promise.resolve({ error: null })
+// Create a mock client for when credentials are invalid
+const createMockClient = () => ({
+  auth: {
+    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    onAuthStateChange: (callback: any) => {
+      // Call callback immediately with no session
+      setTimeout(() => callback('SIGNED_OUT', null), 0);
+      return { data: { subscription: { unsubscribe: () => {} } } };
     },
-    from: () => ({
-      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) }) }),
-      insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) }) }),
-      upsert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+    signUp: () => Promise.resolve({ 
+      data: null, 
+      error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
+    }),
+    signInWithPassword: () => Promise.resolve({ 
+      data: null, 
+      error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
+    }),
+    signOut: () => Promise.resolve({ error: null })
+  },
+  from: () => ({
+    select: () => ({ 
+      eq: () => ({ 
+        single: () => Promise.resolve({ 
+          data: null, 
+          error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
+        }),
+        order: () => ({ 
+          limit: () => ({ 
+            single: () => Promise.resolve({ 
+              data: null, 
+              error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
+            }) 
+          }) 
+        })
+      }) 
+    }),
+    insert: () => ({ 
+      select: () => ({ 
+        single: () => Promise.resolve({ 
+          data: null, 
+          error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
+        }) 
+      }) 
+    }),
+    upsert: () => Promise.resolve({ 
+      data: null, 
+      error: { message: 'Supabase not configured. Please add valid credentials to .env file.' } 
     })
-  };
-}
+  })
+});
 
+// Create the actual client or mock client
+export const supabase = hasValidCredentials 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createMockClient();
 
 export type Database = {
   public: {

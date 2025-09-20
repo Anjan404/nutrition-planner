@@ -26,22 +26,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } = { session: null } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Auth session error:', error);
-      setUser(null);
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } = { session: null } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.warn('Auth session error (Supabase may not be configured):', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } = { subscription: { unsubscribe: () => {} } } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let subscription: any;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
+      subscription = data?.subscription;
+    } catch (error) {
+      console.warn('Auth state change listener error (Supabase may not be configured):', error);
+      subscription = { unsubscribe: () => {} };
+    }
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe?.();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
