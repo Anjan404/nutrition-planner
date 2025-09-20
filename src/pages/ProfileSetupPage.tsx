@@ -128,6 +128,7 @@ export const ProfileSetupPage: React.FC = () => {
   };
 
   const generateInitialDietPlan = async () => {
+    console.log('Starting AI diet plan generation...');
     try {
       // Get the updated profile data
       const profile = {
@@ -141,11 +142,15 @@ export const ProfileSetupPage: React.FC = () => {
         cultural_preferences: formData.culturalPreferences
       };
 
+      console.log('User profile for AI:', profile);
+
       // Import deepseekAI dynamically to avoid circular imports
       const { deepseekAI } = await import('../lib/deepseek');
       
       // Generate meal plan using Deepseek AI
+      console.log('Calling Deepseek AI...');
       const aiMealPlan = await deepseekAI.generateMealPlan(profile);
+      console.log('AI meal plan generated:', aiMealPlan);
       
       // Calculate total daily calories from the first day
       const firstDay = Object.values(aiMealPlan)[0];
@@ -168,6 +173,7 @@ export const ProfileSetupPage: React.FC = () => {
       if (error) throw error;
       
       // Store the generated plan to display
+      console.log('Diet plan saved to database:', data);
       setGeneratedPlan(data);
 
     } catch (error) {
@@ -519,8 +525,8 @@ export const ProfileSetupPage: React.FC = () => {
                 <div className="bg-leaf-green p-3 rounded-xl w-fit mx-auto mb-2">
                   <Users className="h-6 w-6 text-white" />
                 </div>
-                <div className="text-2xl font-bold text-graphite-ink">AI</div>
-                <div className="text-sm text-gray-600">Generated</div>
+                <div className="text-2xl font-bold text-graphite-ink">✨</div>
+                <div className="text-sm text-gray-600">AI Powered</div>
               </div>
             </div>
 
@@ -615,9 +621,9 @@ export const ProfileSetupPage: React.FC = () => {
               🤖 Powered by Advanced AI
             </h3>
             <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-              Your meal plan was created using Deepseek AI, considering your age ({formData.age}), 
+              Your personalized meal plan was created using Deepseek AI, analyzing your age ({formData.age}), 
               activity level ({formData.activityLevel}), fitness goals, cultural preferences, 
-              and dietary restrictions for optimal nutrition.
+              and dietary restrictions to deliver optimal nutrition tailored just for you.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {formData.fitnessGoals.map((goal) => (

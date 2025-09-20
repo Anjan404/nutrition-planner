@@ -123,7 +123,8 @@ Return ONLY the JSON object, no additional text.`;
 
   async generateMealPlan(profile: UserProfile): Promise<WeeklyMealPlan> {
     if (!this.apiKey) {
-      throw new Error('Deepseek API key not configured. Please add VITE_DEEPSEEK_API_KEY to your environment variables.');
+      console.error('Deepseek API key not configured');
+      return this.generateFallbackMealPlan(2000);
     }
 
     const targetCalories = this.calculateBMR(profile);
@@ -162,7 +163,8 @@ Return ONLY the JSON object, no additional text.`;
       const content = data.choices?.[0]?.message?.content;
 
       if (!content) {
-        throw new Error('No content received from Deepseek API');
+        console.error('No content received from Deepseek API');
+        return this.generateFallbackMealPlan(targetCalories);
       }
 
       // Parse the JSON response
@@ -171,7 +173,7 @@ Return ONLY the JSON object, no additional text.`;
         return mealPlan;
       } catch (parseError) {
         console.error('Failed to parse Deepseek response:', content);
-        throw new Error('Invalid JSON response from Deepseek API');
+        return this.generateFallbackMealPlan(targetCalories);
       }
 
     } catch (error) {
@@ -273,7 +275,8 @@ Return ONLY the JSON object, no additional text.`;
 
   async generateMealSuggestions(profile: UserProfile, mealType: string, preferences?: string[]): Promise<Meal[]> {
     if (!this.apiKey) {
-      throw new Error('Deepseek API key not configured');
+      console.error('Deepseek API key not configured');
+      return this.generateFallbackSuggestions(400);
     }
 
     const targetCalories = this.calculateBMR(profile);
@@ -342,6 +345,10 @@ Return ONLY the JSON array, no additional text.`;
     }
 
     // Fallback suggestions
+    return this.generateFallbackSuggestions(calories);
+  }
+
+  private generateFallbackSuggestions(calories: number): Meal[] {
     return [
       {
         name: `Healthy ${mealType}`,
