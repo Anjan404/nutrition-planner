@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Clock, Flame, Users, Star, Heart, ChefHat } from 'lucide-react';
+import { Search, Filter, Clock, Flame, Users, Star, Heart, ChefHat, Loader2, Sparkles } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { deepseekAI, type Meal } from '../lib/deepseek';
+import { supabase } from '../lib/supabase';
 
 export const MealSuggestionsPage: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMealType, setSelectedMealType] = useState('all');
+  const [aiSuggestions, setAiSuggestions] = useState<Meal[]>([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = [
     { value: 'all', label: 'All Cuisines' },
@@ -132,6 +139,38 @@ export const MealSuggestionsPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesMealType;
   });
 
+  const generateAISuggestions = async () => {
+    if (!user) return;
+    
+    setLoadingAI(true);
+    setError(null);
+    
+    try {
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw new Error('Please complete your profile setup first');
+      }
+
+      // Generate AI meal suggestions
+      const mealType = selectedMealType === 'all' ? 'lunch' : selectedMealType;
+      const preferences = selectedCategory !== 'all' ? [selectedCategory] : [];
+      
+      const suggestions = await deepseekAI.generateMealSuggestions(profile, mealType, preferences);
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error generating AI suggestions:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate AI suggestions');
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-soft-cloud to-white pt-20 font-poppins">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -203,13 +242,141 @@ export const MealSuggestionsPage: React.FC = () => {
               <Filter className="h-4 w-4" />
               <span>Filters</span>
             </button>
+
+            {/* AI Suggestions Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={generateAISuggestions}
+              disabled={loadingAI}
+              className="px-6 py-3 bg-gradient-secondary text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
+            >
+              {loadingAI ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span>{loadingAI ? 'Generating...' : 'AI Suggestions'}</span>
+            </motion.button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-alert-red/10 border border-alert-red/20 text-alert-red px-6 py-4 rounded-lg mb-6"
+          >
+            <p className="font-medium">Error:</p>
+            <p className="text-sm mt-1">{error}</p>
+          </motion.div>
+        )}
+
+        {/* AI Suggestions Section */}
+        {aiSuggestions.length > 0 && (
+          <div className="mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-vital-mint/10 to-citrus-glow/10 rounded-2xl p-6 mb-6"
+            >
+              <div className="flex items-center space-x-2 mb-4">
+                <Sparkles className="h-6 w-6 text-vital-mint" />
+                <h2 className="text-2xl font-bold text-graphite-ink">AI-Generated Suggestions</h2>
+              </div>
+              <p className="text-gray-600">
+                Personalized meal recommendations based on your profile and preferences
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {aiSuggestions.map((meal, index) => (
+                <motion.div
+                  key={`ai-${index}`}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 border-vital-mint/20"
+                >
+                  {/* AI Badge */}
+                  <div className="bg-gradient-primary p-4 text-center">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <Sparkles className="h-5 w-5 text-white" />
+                      <span className="text-white font-semibold">AI Generated</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">{meal.name}</h3>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    {/* Nutrition Info */}
+                    <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                      <div>
+                        <div className="text-lg font-bold text-graphite-ink">{meal.calories}</div>
+                        <div className="text-xs text-gray-500">Calories</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-coral-energy">{meal.protein}g</div>
+                        <div className="text-xs text-gray-500">Protein</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold text-citrus-glow">{meal.carbs}g</div>
+                        <div className="text-xs text-gray-500">Carbs</div>
+                      </div>
+                    </div>
+
+                    {/* Ingredients */}
+                    {meal.ingredients && (
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-graphite-ink mb-2 text-sm">Ingredients:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {meal.ingredients.slice(0, 3).map((ingredient, i) => (
+                            <span
+                              key={i}
+                              className="bg-vital-mint/10 text-vital-mint px-2 py-1 rounded text-xs"
+                            >
+                              {ingredient}
+                            </span>
+                          ))}
+                          {meal.ingredients.length > 3 && (
+                            <span className="text-xs text-gray-500">+{meal.ingredients.length - 3} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 bg-gradient-primary text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                      >
+                        <ChefHat className="h-4 w-4" />
+                        <span>Cook This</span>
+                      </motion.button>
+                      <button className="bg-soft-cloud text-graphite-ink py-3 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-200">
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            Showing <span className="font-semibold text-graphite-ink">{filteredMeals.length}</span> personalized meal suggestions
+            Showing <span className="font-semibold text-graphite-ink">{filteredMeals.length}</span> meal suggestions
+            {aiSuggestions.length > 0 && (
+              <span className="ml-2 text-vital-mint font-semibold">
+                + {aiSuggestions.length} AI-generated
+              </span>
+            )}
           </p>
         </div>
 

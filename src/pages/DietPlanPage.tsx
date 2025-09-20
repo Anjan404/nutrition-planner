@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Clock, Flame, Users, RefreshCw, Download, Share2 } from 'lucide-react';
+import { Target, Clock, Flame, Users, RefreshCw, Download, Share2, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { deepseekAI, type WeeklyMealPlan } from '../lib/deepseek';
 
 interface MealPlan {
   id: string;
@@ -17,6 +18,7 @@ export const DietPlanPage: React.FC = () => {
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadCurrentPlan();
@@ -48,41 +50,48 @@ export const DietPlanPage: React.FC = () => {
     if (!user) return;
     
     setGenerating(true);
+    setError(null);
     
-    // Simulate AI plan generation
-    const mockPlan = {
-      user_id: user.id,
-      plan_name: 'Personalized Weekly Plan',
-      calories_target: 2000,
-      meals: {
-        monday: {
-          breakfast: { name: 'Oatmeal with Berries', calories: 350, protein: 12, carbs: 60, fats: 8 },
-          lunch: { name: 'Grilled Chicken Salad', calories: 450, protein: 35, carbs: 20, fats: 18 },
-          dinner: { name: 'Salmon with Quinoa', calories: 550, protein: 40, carbs: 45, fats: 22 },
-          snacks: { name: 'Greek Yogurt with Nuts', calories: 200, protein: 15, carbs: 10, fats: 12 }
-        },
-        tuesday: {
-          breakfast: { name: 'Avocado Toast with Eggs', calories: 400, protein: 20, carbs: 35, fats: 22 },
-          lunch: { name: 'Turkey and Hummus Wrap', calories: 480, protein: 28, carbs: 45, fats: 18 },
-          dinner: { name: 'Lean Beef Stir-fry', calories: 520, protein: 35, carbs: 40, fats: 20 },
-          snacks: { name: 'Apple with Almond Butter', calories: 180, protein: 6, carbs: 20, fats: 12 }
-        }
-        // More days would be generated here...
-      }
-    };
-
     try {
+      // Get user profile for AI generation
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw new Error('Please complete your profile setup first');
+      }
+
+      // Generate meal plan using Deepseek AI
+      const aiMealPlan = await deepseekAI.generateMealPlan(profile);
+      
+      // Calculate total daily calories from the first day
+      const firstDay = Object.values(aiMealPlan)[0];
+      const dailyCalories = Object.values(firstDay).reduce((total: number, meal: any) => total + meal.calories, 0);
+
+      const newPlan = {
+        user_id: user.id,
+        plan_name: 'AI-Generated Personalized Plan',
+        calories_target: dailyCalories,
+        meals: aiMealPlan
+      };
+
       const { data, error } = await supabase
         .from('meal_plans')
-        .insert([mockPlan])
+        .insert([newPlan])
         .select()
         .single();
 
-      if (data) {
-        setCurrentPlan(data);
+      if (error) {
+        throw error;
       }
+
+      setCurrentPlan(data);
     } catch (error) {
       console.error('Error generating meal plan:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate meal plan');
     } finally {
       setGenerating(false);
     }
@@ -139,6 +148,18 @@ export const DietPlanPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-alert-red/10 border border-alert-red/20 text-alert-red px-6 py-4 rounded-lg mb-6"
+          >
+            <p className="font-medium">Error generating meal plan:</p>
+            <p className="text-sm mt-1">{error}</p>
+          </motion.div>
+        )}
+
         {!currentPlan ? (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -149,7 +170,7 @@ export const DietPlanPage: React.FC = () => {
             <h2 className="text-3xl font-bold text-graphite-ink mb-4">Ready to Start?</h2>
             <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
               Generate your first AI-powered nutrition plan based on your profile, goals, and preferences. 
-              Our smart algorithm will create a personalized weekly meal plan just for you.
+              Our Deepseek AI will create a personalized weekly meal plan tailored to your specific needs.
             </p>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -160,11 +181,11 @@ export const DietPlanPage: React.FC = () => {
             >
               {generating ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Generating Your Plan...
+                  <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                  AI is creating your personalized plan...
                 </div>
               ) : (
-                'Generate My Diet Plan'
+                'Generate AI Diet Plan'
               )}
             </motion.button>
           </motion.div>
