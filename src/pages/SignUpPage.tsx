@@ -99,7 +99,8 @@ export const SignUpPage: React.FC = () => {
             >
               <User className="h-8 w-8 text-white" />
             </motion.div>
-            <h2 className="text-3xl font-bold text-graphite-ink">Join HOMH12</h2>
+            <h2 className="text-3xl font-bold text-graphite-ink mb-4">Welcome to NutriGen!</h2>
+            <h2 className="text-3xl font-bold text-graphite-ink">Join NutriGen</h2>
             <p className="text-gray-600 mt-2">Start your personalized nutrition journey</p>
           </div>
 

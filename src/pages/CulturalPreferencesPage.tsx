@@ -252,7 +252,7 @@ export const CulturalPreferencesPage: React.FC = () => {
               Get Personalized Cultural Meal Plans
             </h2>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Based on your selected cuisines and dietary needs, we'll create custom meal plans 
+              Based on your selected cuisines and dietary needs, we'll create custom meal plans
               that celebrate your cultural preferences while meeting your nutritional goals.
             </p>
             

@@ -36,7 +36,7 @@ export const Navbar: React.FC = () => {
               <Heart className="h-6 w-6 text-white" />
             </motion.div>
             <span className="font-poppins font-bold text-xl text-graphite-ink">
-              HOMH<span className="text-vital-mint">12</span>
+              Nutri<span className="text-vital-mint">Gen</span>
             </span>
           </Link>
 

@@ -344,7 +344,7 @@ export const LandingPage: React.FC = () => {
               What Our Users <span className="text-vital-mint">Say</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join thousands of satisfied users who have transformed their nutrition and health with HOMH12.
+              Join thousands of satisfied users who have transformed their nutrition and health with NutriGen.
             </p>
           </motion.div>
 
@@ -401,7 +401,7 @@ export const LandingPage: React.FC = () => {
               Ready to Transform Your Health?
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who have already started their personalized nutrition journey with HOMH12.
+              Join thousands of users who have already started their personalized nutrition journey with NutriGen.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

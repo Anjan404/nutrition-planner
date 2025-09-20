@@ -329,7 +329,7 @@ export const WearableIntegrationPage: React.FC = () => {
               Smart Integration Benefits
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              When you connect your wearable devices, HOMH12 automatically adjusts your nutrition plan based on your real-time activity data
+              When you connect your wearable devices, NutriGen automatically adjusts your nutrition plan based on your real-time activity data
             </p>
           </div>
 
