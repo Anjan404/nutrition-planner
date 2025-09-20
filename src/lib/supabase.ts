@@ -11,7 +11,7 @@ if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
 }
 
 // Create client with error handling
-let supabase;
+export let supabase;
 try {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
   console.log('✅ Supabase client initialized');
