@@ -95,6 +95,7 @@ export const ProfileSetupPage: React.FC = () => {
     setLoading(true);
     
     try {
+      // First, update the profile
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -112,6 +113,10 @@ export const ProfileSetupPage: React.FC = () => {
 
       if (error) throw error;
 
+      // After profile is saved, generate AI diet plan
+      await generateInitialDietPlan();
+      
+      // Navigate to diet plan page
       navigate('/diet-plan');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -120,6 +125,47 @@ export const ProfileSetupPage: React.FC = () => {
     }
   };
 
+  const generateInitialDietPlan = async () => {
+    try {
+      // Get the updated profile data
+      const profile = {
+        age: parseInt(formData.age),
+        height: parseFloat(formData.height),
+        weight: parseFloat(formData.weight),
+        activity_level: formData.activityLevel,
+        fitness_goals: formData.fitnessGoals,
+        dietary_restrictions: formData.dietaryRestrictions,
+        medical_conditions: formData.medicalConditions,
+        cultural_preferences: formData.culturalPreferences
+      };
+
+      // Import deepseekAI dynamically to avoid circular imports
+      const { deepseekAI } = await import('../lib/deepseek');
+      
+      // Generate meal plan using Deepseek AI
+      const aiMealPlan = await deepseekAI.generateMealPlan(profile);
+      
+      // Calculate total daily calories from the first day
+      const firstDay = Object.values(aiMealPlan)[0];
+      const dailyCalories = Object.values(firstDay).reduce((total: number, meal: any) => total + meal.calories, 0);
+
+      // Save the generated meal plan to database
+      const newPlan = {
+        user_id: user.id,
+        plan_name: 'Welcome Plan - AI Generated',
+        calories_target: dailyCalories,
+        meals: aiMealPlan
+      };
+
+      await supabase
+        .from('meal_plans')
+        .insert([newPlan]);
+
+    } catch (error) {
+      console.error('Error generating initial diet plan:', error);
+      // Don't throw error here - profile setup should still complete
+    }
+  };
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -451,10 +497,10 @@ export const ProfileSetupPage: React.FC = () => {
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Saving...
+                    Generating Your AI Diet Plan...
                   </div>
                 ) : (
-                  'Complete Setup'
+                  'Complete Setup & Generate Diet Plan'
                 )}
               </motion.button>
             ) : (
