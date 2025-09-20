@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, Heart, Target, Scale, Ruler, Calendar, AlertCircle, Activity } from 'lucide-react';
+import { User, Heart, Target, Scale, Ruler, Calendar, AlertCircle, Activity, Clock, Users, Flame } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -10,6 +10,8 @@ export const ProfileSetupPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState<any>(null);
+  const [showPlan, setShowPlan] = useState(false);
 
   const [formData, setFormData] = useState({
     age: '',
@@ -116,8 +118,8 @@ export const ProfileSetupPage: React.FC = () => {
       // After profile is saved, generate AI diet plan
       await generateInitialDietPlan();
       
-      // Navigate to diet plan page
-      navigate('/diet-plan');
+      // Show the generated plan on screen
+      setShowPlan(true);
     } catch (error) {
       console.error('Error updating profile:', error);
     } finally {
@@ -157,9 +159,16 @@ export const ProfileSetupPage: React.FC = () => {
         meals: aiMealPlan
       };
 
-      await supabase
+      const { data, error } = await supabase
         .from('meal_plans')
-        .insert([newPlan]);
+        .insert([newPlan])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Store the generated plan to display
+      setGeneratedPlan(data);
 
     } catch (error) {
       console.error('Error generating initial diet plan:', error);
